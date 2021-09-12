@@ -44,6 +44,7 @@ func cycleRefreshToken() string {
 	if resp.Body() != nil {
 		json.Unmarshal(resp.Body(), &parsedResponse)
 
+		fmt.Println(string(resp.Body()))
 		fmt.Println(parsedResponse)
 
 		setRefreshToken(parsedResponse.Body["refresh_token"])
@@ -164,8 +165,8 @@ func main() {
 	fmt.Println(getRefreshToken())
 
 	// Start up procedure
-	//updateAccessToken()
-	//updateWeightStats()
+	updateAccessToken()
+	updateWeightStats()
 
 	// Set up cron
 	c := cron.New()
