@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-resty/resty/v2"
@@ -19,7 +20,7 @@ type WithingsRefreshResponse struct {
 func getRefreshToken() string {
 	fileContents, _ := ioutil.ReadFile("./REFRESH_TOKEN")
 
-	return string(fileContents)
+	return strings.TrimSuffix(string(fileContents), "\n")
 }
 
 func setRefreshToken(input string) {
