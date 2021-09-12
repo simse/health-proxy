@@ -17,13 +17,13 @@ type WithingsRefreshResponse struct {
 }
 
 func getRefreshToken() string {
-	fileContents, _ := ioutil.ReadFile("REFRESH_TOKEN")
+	fileContents, _ := ioutil.ReadFile("./REFRESH_TOKEN")
 
 	return string(fileContents)
 }
 
 func setRefreshToken(input string) {
-	ioutil.WriteFile("REFRESH_TOKEN", []byte(input), 0644)
+	ioutil.WriteFile("./REFRESH_TOKEN", []byte(input), 0644)
 }
 
 func cycleRefreshToken() string {
@@ -43,6 +43,8 @@ func cycleRefreshToken() string {
 
 	if resp.Body() != nil {
 		json.Unmarshal(resp.Body(), &parsedResponse)
+
+		fmt.Println(parsedResponse)
 
 		setRefreshToken(parsedResponse.Body["refresh_token"])
 	}
