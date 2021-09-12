@@ -161,9 +161,11 @@ func main() {
 		c.JSON(200, weight)
 	})
 
+	fmt.Println(getRefreshToken())
+
 	// Start up procedure
-	updateAccessToken()
-	updateWeightStats()
+	//updateAccessToken()
+	//updateWeightStats()
 
 	// Set up cron
 	c := cron.New()
