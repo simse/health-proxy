@@ -34,13 +34,6 @@ jobs:
         with:
           context: .
           platforms: linux/amd64
+          push: true
           tags: |
-            simse/health-proxy:latest
-
-      -
-        name: Push Image to Github Container Registry
-        uses: akhilerm/tag-push-action@v1.0.0
-        with:
-          src: simse/health-proxy:latest
-          dst: |
             ghcr.io/simse/health-proxy:latest
