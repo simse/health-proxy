@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math"
+	"sort"
 	"strings"
+	"time"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -46,8 +48,8 @@ func cycleRefreshToken() string {
 	if resp.Body() != nil {
 		json.Unmarshal(resp.Body(), &parsedResponse)
 
-		fmt.Println(string(resp.Body()))
-		fmt.Println(parsedResponse)
+		// fmt.Println(string(resp.Body()))
+		// fmt.Println(parsedResponse)
 
 		setRefreshToken(parsedResponse.Body["refresh_token"])
 	}
@@ -108,13 +110,14 @@ func getWeightData(accessToken string) WithingsDataResponse {
 }
 
 type Weight struct {
-	CurrentWeight float64              `json:"current_weight"`
+	Current       WeightHistoryPoint   `json:"current"`
 	WeightHistory []WeightHistoryPoint `json:"weight_history"`
 }
 
 type WeightHistoryPoint struct {
-	Weight float64 `json:"weight"`
-	Date   int     `json:"date"`
+	Weight        float64   `json:"weight"`
+	FatPercentage float64   `json:"fat_percentage"`
+	Date          time.Time `json:"date"`
 }
 
 var weight Weight
@@ -127,19 +130,30 @@ func updateWeightStats() {
 
 	for _, x := range weightData.Body.MeasureGroups {
 		if x.Attribute == 0 {
+			point := WeightHistoryPoint{
+				Date: time.Unix(int64(x.Date), 0),
+			}
+
 			for _, m := range x.Measures {
 				if m.Type == 1 {
-					measurementPoints = append(measurementPoints, WeightHistoryPoint{
-						Weight: m.GetValue(),
-						Date:   x.Date,
-					})
+					point.Weight = m.GetValue()
+				}
+
+				if m.Type == 6 {
+					point.FatPercentage = m.GetValue()
 				}
 			}
+
+			measurementPoints = append(measurementPoints, point)
 		}
 	}
 
+	sort.Slice(measurementPoints, func(i, j int) bool {
+		return measurementPoints[i].Date.Before(measurementPoints[j].Date)
+	})
+
 	weight.WeightHistory = measurementPoints
-	weight.CurrentWeight = measurementPoints[len(measurementPoints)-1].Weight
+	weight.Current = measurementPoints[len(measurementPoints)-1]
 
 	fmt.Println("Updated weight stats")
 }
@@ -165,7 +179,7 @@ func main() {
 		c.JSON(200, weight)
 	})
 
-	fmt.Println(getRefreshToken())
+	// fmt.Println(getRefreshToken())
 
 	// Start up procedure
 	updateAccessToken()
