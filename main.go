@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"math"
 	"net/url"
 	"os"
@@ -187,10 +186,7 @@ func updateAccessToken() {
 func main() {
 	gin.SetMode(gin.ReleaseMode)
 
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
+	godotenv.Load()
 
 	r := gin.Default()
 	r.Use(cors.Default())
