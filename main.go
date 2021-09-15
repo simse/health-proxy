@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -96,6 +97,8 @@ func (m *WithingsDataGroupMeasure) GetValue() float64 {
 	return float64(m.Value) * math.Pow10(m.Unit)
 }
 
+var previousWeightResponse []byte = []byte("")
+
 func getWeightData(accessToken string) WithingsDataResponse {
 	client := resty.New()
 
@@ -107,6 +110,14 @@ func getWeightData(accessToken string) WithingsDataResponse {
 		}).
 		SetHeader("Authorization", "Bearer "+accessToken).
 		Post("https://wbsapi.withings.net/measure")
+
+	// Detect change
+	if len(previousWeightResponse) != 0 && !bytes.Equal(previousWeightResponse, resp.Body()) {
+		fmt.Println("weight data CHANGE DETECTED")
+		client.R().Post("https://webhook.gatsbyjs.com/hooks/data_source/publish/b2f6b3fe-6899-4e88-b121-fe678b6dbd98")
+	} else {
+		previousWeightResponse = resp.Body()
+	}
 
 	parsedResponse := WithingsDataResponse{}
 
