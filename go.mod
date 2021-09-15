@@ -26,6 +26,7 @@ require (
 
 require (
 	github.com/gin-contrib/cors v1.3.1 // indirect
+	github.com/joho/godotenv v1.3.0 // indirect
 	github.com/robfig/cron/v3 v3.0.0 // indirect
 	golang.org/x/net v0.0.0-20210405180319-a5a99cb37ef4 // indirect
 )

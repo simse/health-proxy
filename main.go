@@ -4,7 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"math"
+	"net/url"
+	"os"
 	"sort"
 	"strings"
 	"time"
@@ -12,6 +15,7 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/go-resty/resty/v2"
+	"github.com/joho/godotenv"
 	"github.com/robfig/cron/v3"
 )
 
@@ -48,8 +52,13 @@ func cycleRefreshToken() string {
 	if resp.Body() != nil {
 		json.Unmarshal(resp.Body(), &parsedResponse)
 
-		// fmt.Println(string(resp.Body()))
-		// fmt.Println(parsedResponse)
+		if parsedResponse.Status != 0 {
+			fmt.Println("ERROR unable to refresh Withings token")
+			return ""
+		}
+
+		fmt.Println(string(resp.Body()))
+		fmt.Println(parsedResponse)
 
 		setRefreshToken(parsedResponse.Body["refresh_token"])
 	}
@@ -104,6 +113,13 @@ func getWeightData(accessToken string) WithingsDataResponse {
 
 	if resp.Body() != nil {
 		json.Unmarshal(resp.Body(), &parsedResponse)
+
+		if parsedResponse.Status != 0 {
+			fmt.Println("[ERROR] unable to fetch Withings weight data")
+			return WithingsDataResponse{
+				Status: parsedResponse.Status,
+			}
+		}
 	}
 
 	return parsedResponse
@@ -111,7 +127,7 @@ func getWeightData(accessToken string) WithingsDataResponse {
 
 type Weight struct {
 	Current       WeightHistoryPoint   `json:"current"`
-	WeightHistory []WeightHistoryPoint `json:"weight_history"`
+	WeightHistory []WeightHistoryPoint `json:"history"`
 }
 
 type WeightHistoryPoint struct {
@@ -127,6 +143,10 @@ func updateWeightStats() {
 	weightData := getWeightData(accessToken)
 
 	measurementPoints := []WeightHistoryPoint{}
+
+	if weightData.Status != 0 {
+		return
+	}
 
 	for _, x := range weightData.Body.MeasureGroups {
 		if x.Attribute == 0 {
@@ -167,6 +187,11 @@ func updateAccessToken() {
 func main() {
 	gin.SetMode(gin.ReleaseMode)
 
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
 	r := gin.Default()
 	r.Use(cors.Default())
 	r.GET("/ping", func(c *gin.Context) {
@@ -177,6 +202,62 @@ func main() {
 
 	r.GET("/weight", func(c *gin.Context) {
 		c.JSON(200, weight)
+	})
+
+	r.GET("/v1/summary", func(c *gin.Context) {
+		c.JSON(200, map[string]interface{}{
+			"weight": weight,
+		})
+	})
+
+	u, _ := url.Parse("https://account.withings.com/oauth2_user/authorize2")
+
+	q := u.Query()
+	q.Set("response_type", "code")
+	q.Set("client_id", os.Getenv("WITHINGS_CLIENT_ID"))
+	q.Set("state", "unspoofed")
+	q.Set("scope", "user.metrics")
+	q.Set("redirect_uri", "http://localhost:8080/withings-callback")
+	u.RawQuery = q.Encode()
+
+	fmt.Println(u.String())
+
+	// Authentication flow
+	r.GET("/withings/authenticate", func(c *gin.Context) {
+
+		c.Redirect(301, u.String())
+	})
+
+	r.GET("/withings-callback", func(c *gin.Context) {
+		fmt.Println(c.Params)
+		client := resty.New()
+
+		code := c.Query("code")
+		fmt.Println(code)
+
+		resp, _ := client.R().
+			SetFormData(map[string]string{
+				"action":        "requesttoken",
+				"client_id":     os.Getenv("WITHINGS_CLIENT_ID"),
+				"client_secret": os.Getenv("WITHINGS_CLIENT_SECRET"),
+				"grant_type":    "authorization_code",
+				"code":          code,
+				"redirect_uri":  "http://localhost:8080/withings-callback",
+			}).
+			Post("https://wbsapi.withings.net/v2/oauth2")
+
+		parsedResponse := WithingsRefreshResponse{}
+
+		if resp.Body() != nil {
+			json.Unmarshal(resp.Body(), &parsedResponse)
+
+			fmt.Println(string(resp.Body()))
+			fmt.Println(parsedResponse)
+
+			setRefreshToken(parsedResponse.Body["refresh_token"])
+		}
+
+		c.String(200, "OK")
 	})
 
 	// fmt.Println(getRefreshToken())
