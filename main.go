@@ -104,7 +104,7 @@ func getWeightData(accessToken string) WithingsDataResponse {
 	resp, _ := client.R().
 		SetFormData(map[string]string{
 			"action":    "getmeas",
-			"meastypes": "1,6",
+			"meastypes": "1,6,76,77,88",
 			"startdate": "11-09-21",
 		}).
 		SetHeader("Authorization", "Bearer "+accessToken).
@@ -142,6 +142,10 @@ type Weight struct {
 type WeightHistoryPoint struct {
 	Weight        float64   `json:"weight"`
 	FatPercentage float64   `json:"fat_percentage"`
+	MuscleMass    float64   `json:"muscle_mass"`
+	BoneMass      float64   `json:"bone_mass"`
+	Hydration     float64   `json:"hydration"`
+	BodyMassIndex float64   `json:"bmi"`
 	Date          time.Time `json:"date"`
 }
 
@@ -171,12 +175,27 @@ func updateWeightStats() {
 				if m.Type == 6 {
 					point.FatPercentage = m.GetValue()
 				}
+
+				if m.Type == 76 {
+					point.MuscleMass = m.GetValue()
+				}
+
+				if m.Type == 77 {
+					point.Hydration = m.GetValue()
+				}
+
+				if m.Type == 88 {
+					point.BoneMass = m.GetValue()
+				}
 			}
 
 			// Skip entire measurement group if there is an empty value
 			if point.Weight == 0 || point.FatPercentage == 0 {
 				continue
 			}
+
+			// Calculate BMI
+			point.BodyMassIndex = point.Weight / float64(172) / float64(172) * float64(10000)
 
 			measurementPoints = append(measurementPoints, point)
 		}
