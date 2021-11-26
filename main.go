@@ -218,7 +218,7 @@ func updateAccessToken() {
 }
 
 func main() {
-	gin.SetMode(gin.ReleaseMode)
+	gin.SetMode(gin.DebugMode)
 
 	godotenv.Load()
 
