@@ -1,10 +1,10 @@
-FROM golang:1.16
+FROM golang:1.17
 
 WORKDIR /app
 COPY . /app/
 
 RUN go build -o health_proxy main.go
 
-EXPOSE 8080
+EXPOSE 5000
 
 CMD [ "./health_proxy" ]

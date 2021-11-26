@@ -24,13 +24,13 @@ type WithingsRefreshResponse struct {
 }
 
 func getRefreshToken() string {
-	fileContents, _ := ioutil.ReadFile("./REFRESH_TOKEN")
+	fileContents, _ := ioutil.ReadFile("/data/REFRESH_TOKEN")
 
 	return strings.TrimSuffix(string(fileContents), "\n")
 }
 
 func setRefreshToken(input string) {
-	ioutil.WriteFile("./REFRESH_TOKEN", []byte(input), 0644)
+	ioutil.WriteFile("/data/REFRESH_TOKEN", []byte(input), 0644)
 }
 
 func cycleRefreshToken() string {
@@ -247,7 +247,7 @@ func main() {
 	q.Set("client_id", os.Getenv("WITHINGS_CLIENT_ID"))
 	q.Set("state", "unspoofed")
 	q.Set("scope", "user.metrics")
-	q.Set("redirect_uri", "http://localhost:8080/withings-callback")
+	q.Set("redirect_uri", "https://api.health.simse.io/withings-callback")
 	u.RawQuery = q.Encode()
 
 	fmt.Println(u.String())
@@ -272,7 +272,7 @@ func main() {
 				"client_secret": os.Getenv("WITHINGS_CLIENT_SECRET"),
 				"grant_type":    "authorization_code",
 				"code":          code,
-				"redirect_uri":  "http://localhost:8080/withings-callback",
+				"redirect_uri":  "https://api.health.simse.io/withings-callback",
 			}).
 			Post("https://wbsapi.withings.net/v2/oauth2")
 
@@ -302,5 +302,5 @@ func main() {
 	c.AddFunc("* * * * *", func() { updateWeightStats() })
 	c.Start()
 
-	r.Run()
+	r.Run(":5000")
 }
