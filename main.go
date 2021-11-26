@@ -39,8 +39,8 @@ func cycleRefreshToken() string {
 	resp, _ := client.R().
 		SetFormData(map[string]string{
 			"action":        "requesttoken",
-			"client_id":     "e04286867ca5236b4b398800fcc005a78cd4ad803d301108a8b0dd8612217938",
-			"client_secret": "de1adf737d3528765c620e9d3fe4f89999289745ff283ecd6f28bd05585f3a4d",
+			"client_id":     os.Getenv("WITHINGS_CLIENT_ID"),
+			"client_secret": os.Getenv("WITHINGS_CLIENT_SECRET"),
 			"grant_type":    "refresh_token",
 			"refresh_token": getRefreshToken(),
 		}).
@@ -53,6 +53,7 @@ func cycleRefreshToken() string {
 
 		if parsedResponse.Status != 0 {
 			fmt.Println("ERROR unable to refresh Withings token")
+			fmt.Println(parsedResponse.Body)
 			return ""
 		}
 
@@ -218,7 +219,7 @@ func updateAccessToken() {
 }
 
 func main() {
-	gin.SetMode(gin.DebugMode)
+	gin.SetMode(gin.ReleaseMode)
 
 	godotenv.Load()
 
